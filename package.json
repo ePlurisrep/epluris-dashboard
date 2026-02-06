@@ -1,0 +1,12 @@
+{
+  "name": "epluris-dashboard",
+  "private": true,
+  "workspaces": ["epluris"],
+  "devDependencies": {
+    "tailwindcss": "^4",
+    "autoprefixer": "^10"
+  },
+  "scripts": {
+    "build:epluris": "npm --prefix epluris run build"
+  }
+}

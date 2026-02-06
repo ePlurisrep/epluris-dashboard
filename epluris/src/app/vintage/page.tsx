@@ -1,3 +1,5 @@
+import Image from "next/image";
+import Link from "next/link";
 import VintageClient from "@/components/vintage/VintageClient";
 import AggregatedDashboard from "@/components/AggregatedDashboard";
 import VintageStyles from "@/components/vintage/VintageStyles";
@@ -25,7 +27,10 @@ export default function Page() {
           <div className="header-main">
             <div className="logo-container">
               <div className="main-logo">
-                ePluris
+                <Link href="/" className="flex items-center gap-3">
+                  <Image src="/ePluris-logo.png" alt="ePluris logo" width={64} height={64} />
+                  <div style={{ fontSize: "1.5rem", fontWeight: 700 }}>ePluris</div>
+                </Link>
               </div>
               <div className="logo-subtitle">PRACTICAL ANALYTICS</div>
             </div>

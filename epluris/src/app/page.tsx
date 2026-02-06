@@ -1,3 +1,5 @@
+import Image from "next/image";
+import Link from "next/link";
 import CongressionalActivities from "@/components/CongressionalActivities";
 import NationalDebtTicker from "@/components/NationalDebtTicker";
 import XFeed from "@/components/XFeed";
@@ -7,7 +9,12 @@ export default function Home() {
     <div className="min-h-screen bg-zinc-50 p-6">
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <header className="flex flex-col gap-2">
-          <h1 className="text-4xl font-bold text-blue-600">Tailwind OK</h1>
+          <div className="flex items-center gap-3">
+            <Link href="/" className="flex items-center gap-3">
+              <Image src="/ePluris-logo.png" alt="ePluris logo" width={500} height={500} />
+              <h1 className="text-4xl font-bold text-blue-600">Tailwind OK</h1>
+            </Link>
+          </div>
           <p className="text-base text-zinc-600">
             Live signals from fiscal, executive, and congressional sources.
           </p>

@@ -1,4 +1,4 @@
-import { supabase } from "./supabase";
+import { isSupabaseConfigured, supabase } from "./supabase";
 
 // Cache system to respect rate limits
 const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes
@@ -14,26 +14,30 @@ export async function fetchWithCache<T>(
   fetcher: () => Promise<T>,
   duration = CACHE_DURATION
 ): Promise<T> {
-  // Check Supabase cache table first
-  const { data: cached, error: cacheError } = await supabase
-    .from("cached_data")
-    .select("*")
-    .eq("key", key)
-    .single<CacheRow>();
+  if (isSupabaseConfigured && supabase) {
+    // Check Supabase cache table first
+    const { data: cached, error: cacheError } = await supabase
+      .from("cached_data")
+      .select("*")
+      .eq("key", key)
+      .single<CacheRow>();
 
-  if (!cacheError && cached && new Date(cached.expires_at) > new Date()) {
-    return cached.data as T;
+    if (!cacheError && cached && new Date(cached.expires_at) > new Date()) {
+      return cached.data as T;
+    }
   }
 
   // Fetch fresh data
   const freshData = await fetcher();
 
-  // Store in cache
-  await supabase.from("cached_data").upsert({
-    key,
-    data: freshData,
-    expires_at: new Date(Date.now() + duration).toISOString(),
-  });
+  if (isSupabaseConfigured && supabase) {
+    // Store in cache
+    await supabase.from("cached_data").upsert({
+      key,
+      data: freshData,
+      expires_at: new Date(Date.now() + duration).toISOString(),
+    });
+  }
 
   return freshData;
 }

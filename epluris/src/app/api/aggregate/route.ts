@@ -2,9 +2,19 @@ import { NextResponse } from "next/server";
 import { fetchNationalDebt, fetchRecentBills } from "@/lib/data-fetchers";
 import axios from "axios";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
+import { createServerSupabaseClient } from "@/lib/supabaseServer";
 
 export async function GET() {
   const results: any = { debt: null, bills: null, tweets: null, posts: null, warnings: [] };
+
+  // Create server supabase client if service role is available
+  let serverSupabase: ReturnType<typeof createServerSupabaseClient> | null = null;
+  try {
+    serverSupabase = process.env.SUPABASE_SERVICE_ROLE_KEY ? createServerSupabaseClient() : null;
+  } catch (e) {
+    // Ignore – we'll fall back to anon client for reads only
+    results.warnings.push("Server Supabase client not available: " + (e as Error).message);
+  }
 
   // Fetch national debt
   try {
@@ -12,9 +22,14 @@ export async function GET() {
     const debtValue = debtRes?.data?.[0]?.tot_pub_debt_out_amt as string | undefined;
     results.debt = debtValue ?? null;
 
-    if (isSupabaseConfigured && supabase && debtValue) {
+    if (debtValue) {
       try {
-        await supabase.from("debt_records").insert({ recorded_at: new Date().toISOString(), debt_amount: debtValue });
+        if (serverSupabase) {
+          await serverSupabase.from("debt_records").insert({ recorded_at: new Date().toISOString(), debt_amount: debtValue });
+        } else if (isSupabaseConfigured && supabase) {
+          // Attempt with anon client (may fail due to RLS)
+          await supabase.from("debt_records").insert({ recorded_at: new Date().toISOString(), debt_amount: debtValue });
+        }
       } catch (e) {
         results.warnings.push("Failed to persist debt record: " + (e as Error).message);
       }
@@ -30,7 +45,7 @@ export async function GET() {
     const bills = billsRes?.bills ?? billsRes?.data ?? [];
     results.bills = bills;
 
-    if (isSupabaseConfigured && supabase && Array.isArray(bills)) {
+    if (Array.isArray(bills)) {
       try {
         const upserts = bills.map((b: any, idx: number) => ({
           id: b.billNumber ?? b.bill_number ?? `bill-${idx}`,
@@ -39,7 +54,11 @@ export async function GET() {
           introduced_at: b.introducedDate ?? b.introduced_at ?? new Date().toISOString(),
         }));
 
-        await supabase.from("bills").upsert(upserts, { onConflict: "id" });
+        if (serverSupabase) {
+          await serverSupabase.from("bills").upsert(upserts, { onConflict: "id" });
+        } else if (isSupabaseConfigured && supabase) {
+          await supabase.from("bills").upsert(upserts, { onConflict: "id" });
+        }
       } catch (e) {
         results.warnings.push("Failed to persist bills: " + (e as Error).message);
       }
@@ -56,10 +75,14 @@ export async function GET() {
       const payload = await tweetsRes.json();
       results.tweets = payload.data ?? [];
 
-      if (isSupabaseConfigured && supabase && Array.isArray(payload.data)) {
+      if (Array.isArray(payload.data)) {
         try {
           const upserts = payload.data.map((t: any) => ({ id: t.id, text: t.text, created_at: t.created_at }));
-          await supabase.from("tweets").upsert(upserts, { onConflict: "id" });
+          if (serverSupabase) {
+            await serverSupabase.from("tweets").upsert(upserts, { onConflict: "id" });
+          } else if (isSupabaseConfigured && supabase) {
+            await supabase.from("tweets").upsert(upserts, { onConflict: "id" });
+          }
         } catch (e) {
           results.warnings.push("Failed to persist tweets: " + (e as Error).message);
         }
@@ -73,8 +96,19 @@ export async function GET() {
     results.warnings.push("Tweets fetch failed");
   }
 
-  // Fetch posts from Supabase "posts" table if available
-  if (isSupabaseConfigured && supabase) {
+  // Fetch posts from Supabase "posts" table if available (prefer server client)
+  if (serverSupabase) {
+    try {
+      const { data: postsData, error } = await serverSupabase.from("posts").select("*").order("created_at", { ascending: false }).limit(20);
+      if (error) {
+        results.warnings.push("Failed to read posts via server client: " + error.message);
+      } else {
+        results.posts = postsData ?? [];
+      }
+    } catch (e) {
+      results.warnings.push("Failed to read posts: " + (e as Error).message);
+    }
+  } else if (isSupabaseConfigured && supabase) {
     try {
       const { data: postsData, error } = await supabase.from("posts").select("*").order("created_at", { ascending: false }).limit(20);
       if (error) {

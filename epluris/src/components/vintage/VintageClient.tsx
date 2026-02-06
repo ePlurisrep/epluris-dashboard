@@ -57,7 +57,7 @@ export default function VintageClient() {
     }
 
     widgets.forEach((widget) => {
-      const header = widget.querySelector(".widget-header");
+      const header = widget.querySelector(".widget-header") as HTMLElement;
       if (!header) return;
       header.addEventListener("mousedown", startDrag);
       header.addEventListener("selectstart", (e) => e.preventDefault());
@@ -73,7 +73,7 @@ export default function VintageClient() {
       footerText.textContent = "";
       let i = 0;
       function typeFooter() {
-        if (i < originalText.length) {
+        if (i < originalText.length && footerText) {
           footerText.textContent += originalText.charAt(i);
           i++;
           setTimeout(typeFooter, 40);
@@ -87,7 +87,7 @@ export default function VintageClient() {
       widgets.forEach((widget) => {
         const header = widget.querySelector(".widget-header");
         if (!header) return;
-        header.removeEventListener("mousedown", startDrag);
+        header.removeEventListener("mousedown", startDrag as EventListener);
         header.removeEventListener("selectstart", (e) => e.preventDefault());
       });
     };

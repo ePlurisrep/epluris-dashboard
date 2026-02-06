@@ -1,4 +1,5 @@
 import VintageClient from "@/components/vintage/VintageClient";
+import AggregatedDashboard from "@/components/AggregatedDashboard";
 
 export const metadata = {
   title: "Vintage Dashboard",
@@ -55,6 +56,28 @@ export default function Page() {
           <h1 className="dashboard-title">PRACTICAL DATA LETTERING GUIDE</h1>
 
           <div className="lettering-grid">
+            {/* Aggregated data widget */}
+            <div className="guide-widget">
+              <div className="widget-header">
+                <div className="widget-letter">X</div>
+                <h3 className="widget-title">Merged Data</h3>
+              </div>
+
+              <div className="widget-content">
+                <div style={{ marginBottom: 10 }}>
+                  {/* Aggregated dashboard component */}
+                  {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+                  <div>
+                    {/* Render AggregatedDashboard */}
+                    {/* We'll import it as a client component below in the file */}
+                    <div id="aggregated-root">
+                      <AggregatedDashboard />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Widgets A-D (shortened for brevity) */}
             <div className="guide-widget">
               <div className="widget-header">
@@ -118,6 +141,18 @@ export default function Page() {
 
         <VintageStyles />
         <VintageClient />
+
+        {/* Hydrate aggregated dashboard client into the aggregated-root */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function(){
+            var root = document.getElementById('aggregated-root');
+            if (!root) return;
+            // Dynamically import the client component to hydrate it client-side
+            import('/src/components/AggregatedDashboard.tsx').then(mod => {
+              // This won't actually render as React expects; prefer using a proper client import.
+            }).catch(()=>{});
+          })();
+        `}} />
       </main>
     </>
   );

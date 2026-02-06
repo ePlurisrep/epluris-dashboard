@@ -25,7 +25,7 @@ export default function Page() {
           <div className="header-main">
             <div className="logo-container">
               <div className="main-logo">
-                DATA<span>VISION</span>
+                ePluris
               </div>
               <div className="logo-subtitle">PRACTICAL ANALYTICS</div>
             </div>
